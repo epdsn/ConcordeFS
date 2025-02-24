@@ -1,5 +1,6 @@
 import pygame
 import sys
+from game.obstacle import Obstacle
 import utils # automatically initializes logging
 import logging
 from settings import *
@@ -18,19 +19,10 @@ clock = pygame.time.Clock()
 # Initialize the Graphics class
 graphics = Graphics()
 
-# Define obstacle class
-class Obstacle:
-    def __init__(self, x, y):
-        self.image = graphics.mountain_image
-        self.rect = self.image.get_rect()
-        self.rect.topleft = (x, y)
-
-    def move(self, speed):
-        self.rect.x -= speed
 
 # Create a list to hold obstacles
-obstacles = []
-obstacle_frequency = 2000  # Add an obstacle every 100 pixels
+mountains = []
+mountains_frequency = 2000  # Add an obstacle every 100 pixels
 
 # Main game loop
 start_screen = True
@@ -91,11 +83,11 @@ try:
                 background_x = 0
 
             # Add obstacles
-            if len(obstacles) == 0 or obstacles[-1].rect.right < screen_width - obstacle_frequency:
-                obstacles.append(Obstacle(screen_width, screen_height - graphics.mountain_image.get_height() - (runway_height * 2 + 10)))
+            if len(mountains) == 0 or mountains[-1].rect.right < screen_width - mountains_frequency:
+                mountains.append(Obstacle(screen_width, screen_height - graphics.mountain_image.get_height() - (runway_height * 2 + 10)))
 
             # Move obstacles
-            for obstacle in obstacles:
+            for obstacle in mountains:
                 obstacle.move(forward_speed)
 
         # Clear the screen
@@ -118,12 +110,12 @@ try:
             plane_rect.topleft = (plane_x, plane_y)
 
             try:
-                graphics.draw_game_screen(screen, background_x, runway_x, runway_y, runway_width, runway_height, obstacles, plane_rect, rotated_plane)
+                graphics.draw_game_screen(screen, background_x, runway_x, runway_y, runway_width, runway_height, mountains, plane_rect, rotated_plane)
             except Exception as e:
                 logging.error("An error occurred while loading the game screen: {e}")
 
             # Mountain Collision detection
-            for obstacle in obstacles:
+            for obstacle in mountains:
                 if plane_rect and plane_rect.colliderect(obstacle.rect):
                     # Collision detected
                     # Implement collision response here

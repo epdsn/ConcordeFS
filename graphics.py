@@ -1,6 +1,9 @@
 # graphics.py
 
 import pygame
+
+pygame.init()
+
 from settings import screen_width, screen_height  
 
 class Graphics:
