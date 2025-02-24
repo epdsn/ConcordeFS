@@ -18,10 +18,6 @@ clock = pygame.time.Clock()
 # Initialize the Graphics class
 graphics = Graphics()
 
-# Set up buttons
-start_button_text = graphics.button_font.render('START', True, graphics.BUTTON_TEXT_COLOR)
-start_button_rect = start_button_text.get_rect(center=(screen_width // 2, screen_height // 2 + 225))
-
 # Define obstacle class
 class Obstacle:
     def __init__(self, x, y):
@@ -50,7 +46,7 @@ try:
 
             if start_screen:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if start_button_rect.collidepoint(event.pos):
+                    if graphics.start_button_rect.collidepoint(event.pos):
                         start_screen = False  # Start the game when the start button is clicked
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     start_screen = False  # Start the game when the return key is pressed           
@@ -108,7 +104,7 @@ try:
         if start_screen:
             # Draw start screen background
             try:
-                graphics.draw_start_screen(screen, start_button_rect)
+                graphics.draw_start_screen(screen, graphics.start_button_rect)
             except Exception as e:
                 logging.error("An error occured while loading the start screen")
 

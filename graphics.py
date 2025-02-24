@@ -1,6 +1,7 @@
 # graphics.py
 
 import pygame
+from settings import screen_width, screen_height  
 
 class Graphics:
     def __init__(self):
@@ -18,6 +19,10 @@ class Graphics:
 
         # Set up fonts
         self.button_font = pygame.font.Font(None, 36)
+
+        # Set up buttons
+        self.start_button_text = self.button_font.render('START', True, self.BUTTON_TEXT_COLOR)
+        self.start_button_rect = self.start_button_text.get_rect(center=(screen_width // 2, screen_height // 2 + 225))
 
     def draw_start_screen(self, screen, start_button_rect):
         # Draw start screen background
