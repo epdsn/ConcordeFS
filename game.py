@@ -1,12 +1,13 @@
 import pygame
 import sys
+import utils # automatically initializes logging
 import logging
+from settings import *
 from graphics import Graphics
 
-# Configure logging
-logging.basicConfig(filename='debug.log', 
-                    level=logging.DEBUG, datefmt='%Y-%m-%d %I:%M:%S %p', 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+# Set up logging
+logging = logging.getLogger(__name__)
+logging.info("Game started.")
 
 # Initialize Pygame
 pygame.init()
@@ -14,41 +15,12 @@ pygame.init()
 # Set up game loop
 clock = pygame.time.Clock()
 
-# Set up the screen
-screen_width = 1000
-screen_height = 850
-screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Concorde Flight Simulator 8-bit")
-
 # Initialize the Graphics class
 graphics = Graphics()
-
-# Set up the runway
-runway_width = screen_width
-runway_height = 25
-runway_x = 0
-runway_y = screen_height - 50
 
 # Set up buttons
 start_button_text = graphics.button_font.render('START', True, graphics.BUTTON_TEXT_COLOR)
 start_button_rect = start_button_text.get_rect(center=(screen_width // 2, screen_height // 2 + 225))
-
-# Set up the plane
-plane_width = 50
-plane_height = 50
-plane_x = 100  # Initial x-coordinate of the plane
-plane_y = screen_height // 2 + 100  # Initial y-coordinate of the plane
-
-# Angle of rotation for the plane
-plane_angle = 0
-
-# Set up the initial position of the background
-background_x = 0
-
-# Set up speed values
-forward_speed = 5
-left_speed = 3
-right_speed = 8
 
 # Define obstacle class
 class Obstacle:
