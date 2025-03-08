@@ -1,143 +1,168 @@
 import pygame
 import sys
 from game.obstacle import Obstacle
-import utils # automatically initializes logging
+import utils
 import logging
 from settings import *
 from graphics import Graphics
 
-# Set up logging
-logging = logging.getLogger(__name__)
-logging.info("Game started.")
+class Game:
+    def __init__(self):
+        # Set up logging
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("Game started.")
 
-# Initialize Pygame
-pygame.init()
+        # Initialize Pygame and game state
+        pygame.init()
+        self.clock = pygame.time.Clock()
+        self.graphics = Graphics()
+        
+        # Game state
+        self.running = True
+        self.start_screen = True
+        
+        # Plane properties
+        self.plane_x = 100
+        self.plane_y = screen_height // 2 + 100
+        self.plane_angle = 0
+        self.plane_rect = None
+        self.rotated_plane = None
+        
+        # Obstacles
+        self.mountains = []
+        self.mountains_frequency = 2000
+        
+        # Background
+        self.background_x = 0
+        self.forward_speed = 5  # default speed
 
-# Set up game loop
-clock = pygame.time.Clock()
-
-# Initialize the Graphics class
-graphics = Graphics()
-
-
-# Create a list to hold obstacles
-mountains = []
-mountains_frequency = 2000  # Add an obstacle every 100 pixels
-
-# Main game loop
-start_screen = True
-running = True
-rotated_plane = None  # Initialize rotated_plane outside of the game loop
-plane_rect = None  # Initialize plane_rect outside of the game loop
-
-try:
-    while running:
+    def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                self.running = False
 
-            if start_screen:
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if graphics.start_button_rect.collidepoint(event.pos):
-                        start_screen = False  # Start the game when the start button is clicked
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                    start_screen = False  # Start the game when the return key is pressed           
+            if self.start_screen:
+                self.handle_start_screen_events(event)
             else:
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    start_screen = True  # Go back to the start screen if Escape is pressed
+                self.handle_game_events(event)
 
-                # Adjust speeds based on key presses
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_1:
-                        forward_speed = 50  # Set forward speed to 3 for mock speed 1
-                    elif event.key == pygame.K_2:
-                        forward_speed = 100  # Set forward speed to 5 for mock speed 2
-                    elif event.key == pygame.K_3:
-                        forward_speed = 200  # Set forward speed to 8 for mock speed 3
-                    elif event.key == pygame.K_0:
-                        forward_speed = 5  # back to normal speed
+    def handle_start_screen_events(self, event):
+        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and 
+            self.graphics.start_button_rect.collidepoint(event.pos)):
+            self.start_screen = False
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            self.start_screen = False
 
-        if not start_screen:  # If not in the start screen
-            # Handle key events
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-                plane_x -= left_speed  # Move the plane left by decreasing its x-coordinate
-            if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-                plane_x += right_speed  # Move the plane right by increasing its x-coordinate
-            if keys[pygame.K_s] or keys[pygame.K_UP]:
-                plane_y -= 5.0  # Move the plane up by decreasing its y-coordinate
-                plane_angle = 5  # Adjust the angle of rotation when K_UP is pressed
-            if keys[pygame.K_w] or keys[pygame.K_DOWN]:
-                plane_y = min(plane_y + 5, screen_height - plane_height - 25)  # Move the plane down by increasing its y-coordinate, but not below the bottom boundary
-                plane_angle = -5  # Adjust the angle of rotation when K_DOWN is pressed
+    def handle_game_events(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.start_screen = True
+            elif event.key == pygame.K_1:
+                self.forward_speed = 50
+            elif event.key == pygame.K_2:
+                self.forward_speed = 100
+            elif event.key == pygame.K_3:
+                self.forward_speed = 200
+            elif event.key == pygame.K_0:
+                self.forward_speed = 5
 
-            # Keep plane within screen boundaries
-            plane_x = max(0, min(plane_x, screen_width - plane_width))
-            plane_y = max(0, min(plane_y, screen_height - plane_height))
+    def update_game_state(self):
+        if not self.start_screen:
+            self.handle_player_movement()
+            self.update_background()
+            self.update_obstacles()
 
-            # Update the position of the background
-            background_x -= forward_speed  # Adjust the scrolling speed here
+    def handle_player_movement(self):
+        keys = pygame.key.get_pressed()
+        
+        # Handle horizontal movement
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            self.plane_x -= left_speed
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            self.plane_x += right_speed
+            
+        # Handle vertical movement
+        if keys[pygame.K_s] or keys[pygame.K_UP]:
+            self.plane_y -= 5.0
+            self.plane_angle = 5
+        if keys[pygame.K_w] or keys[pygame.K_DOWN]:
+            self.plane_y = min(self.plane_y + 5, screen_height - plane_height - 25)
+            self.plane_angle = -5
+            
+        # Reset angle when no vertical movement
+        if not keys[pygame.K_UP] and not keys[pygame.K_DOWN]:
+            self.plane_angle = 0
+            
+        # Keep plane within boundaries
+        self.plane_x = max(0, min(self.plane_x, screen_width - plane_width))
+        self.plane_y = max(0, min(self.plane_y, screen_height - plane_height))
 
-            # If the background has scrolled off the screen, reset its position
-            if background_x <= -graphics.background_image.get_width():
-                background_x = 0
+    def update_background(self):
+        self.background_x -= self.forward_speed
+        if self.background_x <= -self.graphics.background_image.get_width():
+            self.background_x = 0
 
-            # Add obstacles
-            if len(mountains) == 0 or mountains[-1].rect.right < screen_width - mountains_frequency:
-                mountains.append(Obstacle(screen_width, screen_height - graphics.mountain_image.get_height() - (runway_height * 2 + 10)))
+    def update_obstacles(self):
+        if len(self.mountains) == 0 or self.mountains[-1].rect.right < screen_width - self.mountains_frequency:
+            self.mountains.append(Obstacle(screen_width, 
+                screen_height - self.graphics.mountain_image.get_height() - (runway_height * 2 + 10)))
+        
+        for obstacle in self.mountains:
+            obstacle.move(self.forward_speed)
 
-            # Move obstacles
-            for obstacle in mountains:
-                obstacle.move(forward_speed)
+    def check_collisions(self):
+        for obstacle in self.mountains:
+            if self.plane_rect and self.plane_rect.colliderect(obstacle.rect):
+                self.handle_collision()
 
-        # Clear the screen
-        screen.fill(graphics.WHITE)
+    def handle_collision(self):
+        self.plane_x = 100
+        self.plane_y = screen_height // 2 + 100
+        self.logger.info("BOOM! The concord flew into a mountain!")
 
-        if start_screen:
-            # Draw start screen background
+    def render(self):
+        screen.fill(self.graphics.WHITE)
+        
+        if self.start_screen:
             try:
-                graphics.draw_start_screen(screen, graphics.start_button_rect)
+                self.graphics.draw_start_screen(screen, self.graphics.start_button_rect)
             except Exception as e:
-                logging.error("An error occured while loading the start screen")
+                self.logger.error("An error occurred while loading the start screen")
+        else:
+            self.render_game()
 
-        else:  # If not in the start screen
-
-            # Rotate the plane image
-            rotated_plane = pygame.transform.rotate(graphics.plane_image, plane_angle)
-            # Get the bounding rectangle of the rotated plane image
-            plane_rect = rotated_plane.get_rect()
-            # Set its position
-            plane_rect.topleft = (plane_x, plane_y)
-
-            try:
-                graphics.draw_game_screen(screen, background_x, runway_x, runway_y, runway_width, runway_height, mountains, plane_rect, rotated_plane)
-            except Exception as e:
-                logging.error("An error occurred while loading the game screen: {e}")
-
-            # Mountain Collision detection
-            for obstacle in mountains:
-                if plane_rect and plane_rect.colliderect(obstacle.rect):
-                    # Collision detected
-                    # Implement collision response here
-                    # For simplicity, let's reset the plane position
-                    plane_x = 100
-                    plane_y = screen_height // 2 + 100
-                    logging.info("BOOM! The concord flew into a mountain!")
-
-            # Reset the angle when neither UP nor DOWN key is pressed
-            if not keys[pygame.K_UP] and not keys[pygame.K_DOWN]:
-                plane_angle = 0
-
-        # Update the display
         pygame.display.flip()
 
-        # Cap the frame rate
-        clock.tick(60)
+    def render_game(self):
+        try:
+            # Update plane graphics
+            self.rotated_plane = pygame.transform.rotate(self.graphics.plane_image, self.plane_angle)
+            self.plane_rect = self.rotated_plane.get_rect()
+            self.plane_rect.topleft = (self.plane_x, self.plane_y)
+            
+            # Draw game elements
+            self.graphics.draw_game_screen(
+                screen, self.background_x, runway_x, runway_y,
+                runway_width, runway_height, self.mountains,
+                self.plane_rect, self.rotated_plane
+            )
+        except Exception as e:
+            self.logger.error(f"An error occurred while loading the game screen: {e}")
 
-except Exception as e:
-    # Log errors to the file
-    logging.exception("An error occurred:")
+    def run(self):
+        try:
+            while self.running:
+                self.handle_events()
+                self.update_game_state()
+                self.check_collisions()
+                self.render()
+                self.clock.tick(60)
+        except Exception as e:
+            self.logger.exception("An error occurred:")
+        finally:
+            pygame.quit()
+            sys.exit()
 
-# Quit Pygame
-pygame.quit()
-sys.exit()
+if __name__ == "__main__":
+    game = Game()
+    game.run()
